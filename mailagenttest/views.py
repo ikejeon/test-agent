@@ -31,8 +31,10 @@ def index(request):
 	if request.method == 'POST':
 		form = NameForm(request.POST)
 		if form.is_valid():
-			name = form.cleaned_data['name']
-			request.session['user_name'] = name
+			my_email = form.cleaned_data['my_email']
+			my_password = form.cleaned_data['my_password']
+			request.session['my_email'] = my_email
+			request.session['my_password'] = my_password
 			# securemsg = setUp(name)
 			# request.session['securemsg'] = securemsg
 			# print(securemsg.my_did)
@@ -44,18 +46,15 @@ def index(request):
 @csrf_protect
 def generateKey(request):
 	# print(request.session.get('user_name'))
-	securemsg = setUp(request.session.get('user_name'))
+	securemsg = setUp(request.session.get('my_email'))
 	if request.method == 'POST':
 		form = KeyForm(request.POST)
 		if form.is_valid():
 			key = form.cleaned_data['key'].strip().split(' ')
-
 			request.session['other_key'] = key[1]
-
 			return HttpResponseRedirect(reverse('actions'))
 	else:
 		loop = asyncio.get_event_loop()
-
 		form = KeyForm()
 		context = {
 			'did': securemsg.my_did,
@@ -86,16 +85,12 @@ def sendEmail(request):
 	if request.method == 'POST':
 		forms = SendForm(request.POST)
 		if forms.is_valid():
-			securemsg = setUp(request.session.get('user_name'))
+			securemsg = setUp(request.session.get('my_email'))
 			securemsg.my_vk = request.session.get('my_vk')
 			securemsg.wallet_handle = request.session.get('wallet_handle')
 			securemsg.their_vk = request.session.get('other_key')
-
-			my_email = forms.cleaned_data['my_email']
-			my_password = forms.cleaned_data['my_password']
-			their_email = forms.cleaned_data['their_email']
-			send_option = forms.cleaned_data['send_options']
 			message = forms.cleaned_data['message']
+			their_email = forms.cleaned_data['their_email']
 			with open('testFile.json', 'w') as f:
 				f.write(message)
 			# encrypted_msg = loop.run_until_complete(securemsg.encryptMsg(message))
@@ -104,13 +99,13 @@ def sendEmail(request):
 			connection = EmailBackend(
 				host='smtp.gmail.com',
 			    port=587,
-			    username=my_email,
-			    password=my_password
+			    username=request.session['my_email'],
+			    password=request.session['my_password']
 			)
 			email = EmailMessage(
 			'test',
 			message,
-			my_email,
+			request.session['my_email'],
 			[their_email],
 			connection=connection
 			)
@@ -127,4 +122,5 @@ def recieve(request):
 	return HttpResponse("recieve")
 
 def finished(request):
-	return HttpResponse("Message to Sent Successfully")
+	context = {}
+	return render(request, 'finished.html', context)

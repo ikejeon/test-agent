@@ -1,0 +1,7 @@
+<form action="." method="post">
+  {% csrf_token %}
+  <p>Your did and key are: {{did}} {{vkey}}</p>
+    <p>What is the other party's did key?</p>
+    {{ form }}
+    <input type="submit" value="Submit">
+</form>

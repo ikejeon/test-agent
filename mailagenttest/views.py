@@ -13,20 +13,11 @@ from .sendSecureEmail import *
 # Create your views here.
 
 def index(request):
-	_default_smtp_cfg = {
-	    'server': 'smtp.gmail.com',
-	    'username': 'your email',
-	    'password': 'find the password from the config file',
-	    'port': '587'
-	}
-
 	# loop = asyncio.get_event_loop()
 	loop = asyncio.new_event_loop()
 	asyncio.set_event_loop(loop)
 	home = expanduser("~")
 	# args = _get_config_from_cmdline()
-	cfg = get_config_from_file(home)
-	smtp_cfg = apply_cfg(cfg, 'smtp2', _default_smtp_cfg)
 	context = {}
 	if request.method == 'POST':
 		form = NameForm(request.POST)

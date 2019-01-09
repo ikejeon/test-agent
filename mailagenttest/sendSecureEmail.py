@@ -30,7 +30,6 @@ class SecureMsg():
         print('encryp type is: ', type(encrypted))
         return encrypted
 
-
 #     # Step 6 code goes here, replacing the read() stub.
     async def decryptMsg(self, encrypted):
         decrypted = await crypto.auth_decrypt(self.wallet_handle, self.my_vk, encrypted)

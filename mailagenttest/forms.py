@@ -10,3 +10,6 @@ class KeyForm(forms.Form):
 class SendForm(forms.Form):
     message = forms.CharField(widget=forms.Textarea)
     their_email = forms.EmailField()
+
+class ReceiveForm(forms.Form):
+    their_email = forms.EmailField()

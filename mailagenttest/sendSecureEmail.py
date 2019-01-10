@@ -8,6 +8,9 @@ import asyncio
 import time
 import re
 import json
+import email
+import getpass, imaplib
+import sys
 
 from indy import crypto, did, wallet
 
@@ -30,12 +33,6 @@ class SecureMsg():
         print('encryp type is: ', type(encrypted))
         return encrypted
 
-#     # Step 6 code goes here, replacing the read() stub.
-    async def decryptMsg(self, encrypted):
-        decrypted = await crypto.auth_decrypt(self.wallet_handle, self.my_vk, encrypted)
-        # decrypted = await crypto.anon_decrypt(wallet_handle, my_vk, encrypted)
-        return (decrypted)
-#
     async def init(self, me):
         me = me.strip()
         self.wallet_config = '{"id": "%s-wallet"}' % me
@@ -77,6 +74,13 @@ async def encryptMsg(decrypted, wallet_handle, my_vk, their_vk):
     with open('encrypted.dat', 'wb') as f:
         f.write(bytes(encrypted))
     print('prepping %s' % msg)
+
+async def decryptMsg(wallet_handle, my_vk, encrypted):
+    print(wallet_handle)
+    print(my_vk)
+    print(encrypted)
+    decrypted = await crypto.auth_decrypt(wallet_handle, my_vk, encrypted)
+    return (decrypted)
 
 def setUp(me):
     securemsg = SecureMsg(me)

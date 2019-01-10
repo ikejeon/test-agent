@@ -1,15 +1,15 @@
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import loader
-from .forms import NameForm, KeyForm, SendForm
+from .forms import NameForm, KeyForm, SendForm, ReceiveForm
 from django.views.decorators.csrf import csrf_protect
 from django.urls import reverse
 from django.core.mail import EmailMessage, get_connection
 from django.core.mail.backends.smtp import EmailBackend
-
 import asyncio
 
 from .sendSecureEmail import *
+from .receiveSecureEmail import *
 # Create your views here.
 
 def index(request):
@@ -26,9 +26,6 @@ def index(request):
 			my_password = form.cleaned_data['my_password']
 			request.session['my_email'] = my_email
 			request.session['my_password'] = my_password
-			# securemsg = setUp(name)
-			# request.session['securemsg'] = securemsg
-			# print(securemsg.my_did)
 			return HttpResponseRedirect('keygen/')
 	else:
 		form = NameForm()
@@ -57,18 +54,11 @@ def generateKey(request):
 		context['form'] = form
 
 	return render(request, 'keygen.html', context)
-	# return HttpResponse(template.render(context))
-	# return HttpResponse("your did and key are: ")
 
 @csrf_protect
 def actions(request):
 	context = {}
 	return render(request, 'actions.html', context)
-
-	# return HttpResponse(">")
-
-# def vote(request, question_id):
-#     return HttpResponse("You're voting on question %s." % question_id)
 
 def sendEmail(request):
 	loop = asyncio.new_event_loop()
@@ -82,17 +72,18 @@ def sendEmail(request):
 			securemsg.their_vk = request.session.get('other_key')
 			message = forms.cleaned_data['message']
 			their_email = forms.cleaned_data['their_email']
+
 			with open('testFile.json', 'w') as f:
 				f.write(message)
-			# encrypted_msg = loop.run_until_complete(securemsg.encryptMsg(message))
+
 			encrypted_msg = loop.run_until_complete(encryptMsg('testFile.json', request.session.get('wallet_handle'), request.session.get('my_vk'), request.session.get('other_key')))
-			# request.session['encrypted_msg'] = encrypted_msg
 			connection = EmailBackend(
 				host='smtp.gmail.com',
 			    port=587,
 			    username=request.session['my_email'],
 			    password=request.session['my_password']
 			)
+
 			email = EmailMessage(
 			'test',
 			message,
@@ -100,17 +91,40 @@ def sendEmail(request):
 			[their_email],
 			connection=connection
 			)
+
 			email.attach_file('encrypted.dat')
 			email.send(fail_silently=False)
-			# send_mail('test', encrypted_msg, my_email, [their_email], fail_silently=False, auth_user=my_email, auth_password=my_password)
-			# send(my_email, my_password, 'smtp.gmail.com', 'port', their_email, 'encrypted.dat', 2)
 			return HttpResponseRedirect(reverse('finished'))
 	else:
-		form = SendForm()
-	return render(request, 'send.html', {'form': form})
+		forms = SendForm()
+
+	return render(request, 'send.html', {'form': forms})
 
 def recieve(request):
-	return HttpResponse("recieve")
+	loop = asyncio.new_event_loop()
+	asyncio.set_event_loop(loop)
+	if request.method == 'POST':
+		form = ReceiveForm(request.POST)
+		if form.is_valid():
+			securemsg = setUp(request.session.get('my_email'))
+			securemsg.my_vk = request.session.get('my_vk')
+			securemsg.wallet_handle = request.session.get('wallet_handle')
+			securemsg.their_vk = request.session.get('other_key')
+			their_email = form.cleaned_data['their_email']
+			encrypted_msg = run('imap.gmail.com', '1', request.session['my_email'], request.session['my_password'], their_email)
+			decrypted_msg = loop.run_until_complete(decryptMsg(securemsg.wallet_handle, securemsg.my_vk, encrypted_msg))
+			print('decrypted_msg is: ', decrypted_msg)
+			decrypted_msg_obj = json.loads(decrypted_msg[1].decode("utf-8"))
+			print('decrypted_obj is: ', decrypted_msg_obj)
+
+			request.session['decrypted_msg'] = decrypted_msg
+			request.session['decrypted_msg_obj'] = decrypted_msg_obj
+
+			return HttpResponseRedirect(reverse('finished'))
+	else:
+		form = ReceiveForm()
+
+	return render(request, 'receive.html', {'form': form})
 
 def finished(request):
 	context = {}
